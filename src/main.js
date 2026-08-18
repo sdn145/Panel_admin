@@ -232,18 +232,98 @@ function body() {
     `
   }
 
-  return `
+    return `
     <section class="panel">
 
-      <h2>⚙️ Pengaturan</h2>
+      <h2>⚙️ Pengaturan Bot</h2>
 
-      <div class="endpoint">
-        <p><b>Backend API</b></p>
-        <code>${API}</code>
+      <p class="desc">
+        Kelola konfigurasi utama Bot Piro.
+      </p>
+
+      <div class="settings-grid">
+
+        <div class="setting-card">
+          <div>
+            <h3>🌐 Mode Bot</h3>
+            <p>
+              Tentukan apakah bot menerima pesan secara public
+              atau private.
+            </p>
+          </div>
+
+          <div class="setting-value">
+            <strong>
+              ${esc(modeText())}
+            </strong>
+          </div>
+
+          <div class="buttons">
+
+            <button
+              class="mode public"
+              id="settingsPublic">
+              🌐 PUBLIC
+            </button>
+
+            <button
+              class="mode private"
+              id="settingsPrivate">
+              🔒 PRIVATE
+            </button>
+
+          </div>
+        </div>
+
+        <div class="setting-card">
+          <div>
+            <h3>📡 Status API</h3>
+            <p>
+              Status koneksi antara Panel Piro dan Bot WhatsApp.
+            </p>
+          </div>
+
+          <div class="setting-value">
+            <strong>
+              ${state.status?.connected ? '🟢 ONLINE' : '🔴 OFFLINE'}
+            </strong>
+          </div>
+        </div>
+
+        <div class="setting-card">
+          <div>
+            <h3>🤖 Versi Bot</h3>
+            <p>
+              Versi sistem Bot Piro yang sedang berjalan.
+            </p>
+          </div>
+
+          <div class="setting-value">
+            <strong>10.0.0</strong>
+          </div>
+        </div>
+
+        <div class="setting-card">
+          <div>
+            <h3>🔌 Backend API</h3>
+            <p>
+              Endpoint yang digunakan Panel Piro.
+            </p>
+          </div>
+
+          <code>${esc(API)}</code>
+        </div>
+
       </div>
 
+      ${
+        state.message
+          ? `<div class="message">${esc(state.message)}</div>`
+          : ''
+      }
+
       <p class="warning">
-        ⚠️ API saat ini menggunakan Cloudflare Quick Tunnel.
+        ⚠️ API menggunakan Cloudflare Quick Tunnel.
         URL dapat berubah jika tunnel dihentikan.
       </p>
 
