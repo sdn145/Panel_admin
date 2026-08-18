@@ -5,11 +5,20 @@ const API = 'https://jews-saturday-compensation-blogs.trycloudflare.com'
 const state = {
   tab: 'dashboard',
   status: null,
-  loading: true,
-  message: ''
+  menus: [],
+  loading: false,
+  message: '',
+  menuForm: {
+    command: '',
+    description: '',
+    text: '',
+    logo: ''
+  }
 }
 
+
 async function api(path, options = {}) {
+
   const res = await fetch(API + path, {
     ...options,
     headers: {
@@ -21,358 +30,414 @@ async function api(path, options = {}) {
   const text = await res.text()
 
   let data
+
   try {
     data = JSON.parse(text)
   } catch {
-    throw new Error(text || `HTTP ${res.status}`)
+    throw new Error(text || 'Response error')
   }
 
   if (!res.ok) {
-    throw new Error(data.error || `HTTP ${res.status}`)
+    throw new Error(data.error || 'API Error')
   }
 
   return data
 }
 
-async function loadStatus() {
-  state.loading = true
-  render()
 
-  try {
+async function loadStatus(){
+
+  try{
     state.status = await api('/api/status')
-    state.message = ''
-  } catch (err) {
-    state.status = null
-    state.message = 'API tidak dapat dihubungi: ' + err.message
+  }catch(err){
+    state.message = err.message
   }
 
-  state.loading = false
+}
+
+
+async function loadMenus(){
+
+  try{
+    state.menus = await api('/api/menus')
+  }catch(err){
+    state.menus = []
+  }
+
+}
+
+
+async function setMode(mode){
+
+  await api('/api/mode',{
+    method:'POST',
+    body:JSON.stringify({
+      mode
+    })
+  })
+
+  await loadStatus()
   render()
+
+}function render(){
+
+const connected = state.status?.connected
+
+document.querySelector('#app').innerHTML = `
+
+<div class="layout">
+
+<aside>
+
+<div class="brand">
+PIRO<span>ADMIN</span>
+</div>
+
+
+<button data-tab="dashboard">
+🏠 Dashboard
+</button>
+
+<button data-tab="bot">
+🤖 Bot
+</button>
+
+<button data-tab="settings">
+⚙️ Pengaturan
+</button>
+
+
+</aside>
+
+
+<main>
+
+<header>
+
+<h1>${title()}</h1>
+
+<p>
+Kontrol bot WhatsApp dari Panel Piro.
+</p>
+
+
+<span class="status ${connected?'on':'off'}">
+${connected?'● TERHUBUNG':'● TERPUTUS'}
+</span>
+
+
+</header>
+
+
+${body()}
+
+
+</main>
+
+</div>
+
+`
+
+bind()
+
 }
 
-async function setMode(mode) {
-  try {
-    state.message = 'Mengubah mode...'
-    render()
 
-    const result = await api('/api/mode', {
-      method: 'POST',
-      body: JSON.stringify({ mode })
-    })
 
-    state.message = `Mode berhasil diubah ke ${result.mode}`
-    await loadStatus()
-  } catch (err) {
-    state.message = 'Gagal mengubah mode: ' + err.message
-    render()
-  }
+function title(){
+
+return {
+dashboard:'Dashboard',
+bot:'Kontrol Bot',
+settings:'Pengaturan'
+}[state.tab]
+
 }
 
-function render() {
-  const connected = state.status?.connected
-  const mode = state.status?.mode || '-'
 
-  document.querySelector('#app').innerHTML = `
-    <div class="layout">
 
-      <aside>
-        <div class="brand">
-          PIRO<span>ADMIN</span>
-        </div>
+function body(){
 
-        <button
-          data-tab="dashboard"
-          class="${state.tab === 'dashboard' ? 'active' : ''}">
-          🏠 Dashboard
-        </button>
 
-        <button
-          data-tab="bot"
-          class="${state.tab === 'bot' ? 'active' : ''}">
-          🤖 Bot
-        </button>
+if(state.tab==='dashboard'){
 
-        <button
-          data-tab="settings"
-          class="${state.tab === 'settings' ? 'active' : ''}">
-          ⚙️ Pengaturan
-        </button>
+return `
 
-        <div class="side-note">
-          PIRO / PYNI STORE<br>
-          WhatsApp Bot Panel
-        </div>
-      </aside>
+<section class="panel">
 
-      <main>
+<h2>Dashboard</h2>
 
-        <header>
-          <div>
-            <h1>${title()}</h1>
-            <p>Kontrol bot WhatsApp dari Panel Piro.</p>
-          </div>
+<p>Status WhatsApp:
+<b>
+${state.status?.connected?'ONLINE':'OFFLINE'}
+</b>
+</p>
 
-          <span class="status ${connected ? 'on' : 'off'}">
-            ${connected ? '● TERHUBUNG' : '● TERPUTUS'}
-          </span>
-        </header>
 
-        ${body()}
+<p>
+Mode:
+<b>
+${state.status?.mode || '-'}
+</b>
+</p>
 
-      </main>
-    </div>
-  `
 
-  bind()
+<p>
+Owner:
+<b>
+${state.status?.owner || '-'}
+</b>
+</p>
+
+
+<p>
+Admin:
+<b>
+${state.status?.admin || '-'}
+</b>
+</p>
+
+
+</section>
+
+`
+
 }
 
-function title() {
-  return {
-    dashboard: 'Dashboard',
-    bot: 'Kontrol Bot',
-    settings: 'Pengaturan'
-  }[state.tab]
+
+
+if(state.tab==='bot'){
+
+return `
+
+<section class="panel">
+
+<h2>🎮 Mode Bot</h2>
+
+
+<button id="public">
+🌐 PUBLIC
+</button>
+
+
+<button id="private">
+🔒 PRIVATE
+</button>
+
+
+</section>
+
+`
+
 }
 
-function body() {
-  if (state.tab === 'dashboard') {
-    return `
-      <section class="cards">
 
-        <div class="card">
-          <b>${state.status?.connected ? 'ONLINE' : 'OFFLINE'}</b>
-          <span>Status WhatsApp</span>
-        </div>
 
-        <div class="card">
-          <b>${state.status?.mode || '-'}</b>
-          <span>Mode Bot</span>
-        </div>
+return `
 
-        <div class="card">
-          <b>10.0.0</b>
-          <span>Versi Bot</span>
-        </div>
+<section class="panel">
 
-      </section>
 
-      <section class="panel">
-        <h2>Informasi Bot</h2>
+<h2>⚙️ Pengaturan Bot</h2>
 
-        <div class="info">
-          <p>👑 Owner:
-            <b>${esc(state.status?.owner || '-')}</b>
-          </p>
 
-          <p>🛡️ Admin:
-            <b>${esc(state.status?.admin || '-')}</b>
-          </p>
+<h3>📋 Menu Manager</h3>
 
-          <p>📡 API:
-            <b>Online</b>
-          </p>
 
-          <p>🌐 Mode:
-            <b>${esc(state.status?.mode || '-')}</b>
-          </p>
-        </div>
+<button id="createMenu">
+➕ Create Menu
+</button>
 
-        ${
-          state.message
-            ? `<div class="message">${esc(state.message)}</div>`
-            : ''
-        }
 
-      </section>
-    `
-  }
 
-  if (state.tab === 'bot') {
-    return `
-      <section class="panel">
+<div id="creator" style="display:none">
 
-        <h2>🎮 Kontrol Mode Bot</h2>
 
-        <p class="desc">
-          Pilih mode yang ingin digunakan bot WhatsApp.
-        </p>
+<input id="command"
+placeholder=".command">
 
-        <div class="mode-box">
 
-          <div class="current">
-            Mode sekarang:
-            <strong>${esc(modeText())}</strong>
-          </div>
+<input id="description"
+placeholder="Deskripsi">
 
-          <div class="buttons">
 
-            <button
-              class="mode public"
-              id="public">
-              🌐 MODE PUBLIC
-            </button>
+<textarea id="text"
+placeholder="Isi menu">
+</textarea>
 
-            <button
-              class="mode private"
-              id="private">
-              🔒 MODE PRIVATE
-            </button>
 
-          </div>
+<input id="logo"
+placeholder="URL logo">
 
-        </div>
 
-        ${
-          state.message
-            ? `<div class="message">${esc(state.message)}</div>`
-            : ''
-        }
+<button id="publish">
+🚀 Publish
+</button>
 
-      </section>
-    `
-  }
 
-    return `
-    <section class="panel">
+</div>
 
-      <h2>⚙️ Pengaturan Bot</h2>
 
-      <p class="desc">
-        Kelola konfigurasi utama Bot Piro.
-      </p>
 
-      <div class="settings-grid">
+<h3>
+Menu Aktif
+</h3>
 
-        <div class="setting-card">
-          <div>
-            <h3>🌐 Mode Bot</h3>
-            <p>
-              Tentukan apakah bot menerima pesan secara public
-              atau private.
-            </p>
-          </div>
 
-          <div class="setting-value">
-            <strong>
-              ${esc(modeText())}
-            </strong>
-          </div>
+<div>
 
-          <div class="buttons">
+${
+state.menus.map(m=>`
 
-            <button
-              class="mode public"
-              id="settingsPublic">
-              🌐 PUBLIC
-            </button>
+<div>
 
-            <button
-              class="mode private"
-              id="settingsPrivate">
-              🔒 PRIVATE
-            </button>
+<b>${m.command}</b>
 
-          </div>
-        </div>
+<br>
 
-        <div class="setting-card">
-          <div>
-            <h3>📡 Status API</h3>
-            <p>
-              Status koneksi antara Panel Piro dan Bot WhatsApp.
-            </p>
-          </div>
+${m.description}
 
-          <div class="setting-value">
-            <strong>
-              ${state.status?.connected ? '🟢 ONLINE' : '🔴 OFFLINE'}
-            </strong>
-          </div>
-        </div>
+</div>
 
-        <div class="setting-card">
-          <div>
-            <h3>🤖 Versi Bot</h3>
-            <p>
-              Versi sistem Bot Piro yang sedang berjalan.
-            </p>
-          </div>
-
-          <div class="setting-value">
-            <strong>10.0.0</strong>
-          </div>
-        </div>
-
-        <div class="setting-card">
-          <div>
-            <h3>🔌 Backend API</h3>
-            <p>
-              Endpoint yang digunakan Panel Piro.
-            </p>
-          </div>
-
-          <code>${esc(API)}</code>
-        </div>
-
-      </div>
-
-      ${
-        state.message
-          ? `<div class="message">${esc(state.message)}</div>`
-          : ''
-      }
-
-      <p class="warning">
-        ⚠️ API menggunakan Cloudflare Quick Tunnel.
-        URL dapat berubah jika tunnel dihentikan.
-      </p>
-
-    </section>
-  `
+`).join('')
 }
 
-function modeText() {
-  if (!state.status) return '-'
-  return state.status.mode === 'public'
-    ? 'PUBLIC'
-    : 'PRIVATE'
-}
 
-function esc(value = '') {
-  return String(value).replace(
-    /[&<>"']/g,
-    char => ({
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      "'": '&#39;'
-    }[char])
-  )
-}
+</div>
 
-function bind() {
-  document
-    .querySelectorAll('[data-tab]')
-    .forEach(button => {
-      button.onclick = () => {
-        state.tab = button.dataset.tab
-        render()
-      }
-    })
 
-  document
-    .querySelector('#public')
-    ?.addEventListener('click', () => {
-      setMode('public')
-    })
 
-  document
-    .querySelector('#private')
-    ?.addEventListener('click', () => {
-      setMode('private')
-    })
-}
+</section>
+
+`
+
+}function bind(){
+
+document
+.querySelectorAll('[data-tab]')
+.forEach(btn=>{
+
+btn.onclick=()=>{
+
+state.tab = btn.dataset.tab
 
 render()
-loadStatus()
+
+}
+
+})
+
+
+
+document
+.querySelector('#public')
+?.addEventListener('click',()=>{
+
+setMode('public')
+
+})
+
+
+
+document
+.querySelector('#private')
+?.addEventListener('click',()=>{
+
+setMode('private')
+
+})
+
+
+
+
+document
+.querySelector('#createMenu')
+?.addEventListener('click',()=>{
+
+const box =
+document.querySelector('#creator')
+
+box.style.display =
+box.style.display === 'none'
+?'block'
+:'none'
+
+})
+
+
+
+
+document
+.querySelector('#publish')
+?.addEventListener('click',async()=>{
+
+
+const data={
+
+command:
+document.querySelector('#command').value,
+
+
+description:
+document.querySelector('#description').value,
+
+
+text:
+document.querySelector('#text').value,
+
+
+logo:
+document.querySelector('#logo').value
+
+}
+
+
+
+try{
+
+
+await api('/api/menus',{
+
+method:'POST',
+
+body:
+JSON.stringify(data)
+
+})
+
+
+alert('Menu berhasil dibuat')
+
+
+await loadMenus()
+
+render()
+
+
+}catch(err){
+
+alert(err.message)
+
+}
+
+
+})
+
+
+}
+
+
+
+
+async function start(){
+
+await loadStatus()
+
+await loadMenus()
+
+render()
+
+}
+
+
+start()
