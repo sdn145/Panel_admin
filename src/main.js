@@ -1,6 +1,6 @@
 import './style.css'
 
-const API = 'https://arrived-portal-beginning-publicity.trycloudflare.com'
+const API = 'https://appeals-corp-seems-encounter.trycloudflare.com'
 
 const state = {
   tab: 'dashboard',
