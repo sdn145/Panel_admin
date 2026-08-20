@@ -1,6 +1,6 @@
 import './style.css'
 
-const API = 'https://jews-saturday-compensation-blogs.trycloudflare.com'
+const API = 'https://indiana-metal-locator-balanced.trycloudflare.com'
 
 const state = {
   tab: 'dashboard',
