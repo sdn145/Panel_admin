@@ -6,6 +6,7 @@ const state = {
   tab: 'dashboard',
   status: null,
   menus: [],
+  features: [],
   loading: false,
   message: '',
   menuForm: {
@@ -67,6 +68,85 @@ async function loadMenus(){
 }
 
 
+async function loadFeatures(){
+
+  try{
+    state.features = await api('/api/features')
+  }catch(err){
+    state.features = []
+  }
+
+}
+
+
+async function addFeature(){
+
+  const name = document.querySelector('#featureName').value
+  const command = document.querySelector('#featureCommand').value
+  const description = document.querySelector('#featureDescription').value
+
+  if(!name || !command){
+    alert('Nama dan command wajib diisi')
+    return
+  }
+
+  try{
+    await api('/api/features',{
+      method:'POST',
+      body:JSON.stringify({
+        name,
+        command,
+        description
+      })
+    })
+
+    await loadFeatures()
+    render()
+
+  }catch(err){
+    alert(err.message)
+  }
+
+}
+
+
+async function toggleFeature(id,enabled){
+
+  try{
+    await api('/api/features/'+id,{
+      method:'PUT',
+      body:JSON.stringify({enabled})
+    })
+
+    await loadFeatures()
+    render()
+
+  }catch(err){
+    alert(err.message)
+  }
+
+}
+
+
+async function deleteFeature(id){
+
+  if(!confirm('Hapus feature ini?')) return
+
+  try{
+    await api('/api/features/'+id,{
+      method:'DELETE'
+    })
+
+    await loadFeatures()
+    render()
+
+  }catch(err){
+    alert(err.message)
+  }
+
+}
+
+
 async function setMode(mode){
 
   await api('/api/mode',{
@@ -104,6 +184,10 @@ PIRO<span>ADMIN</span>
 
 <button data-tab="settings">
 ⚙️ Pengaturan
+</button>
+
+<button data-tab="features">
+⚡ Features
 </button>
 
 
@@ -157,6 +241,78 @@ settings:'Pengaturan'
 
 
 function body(){
+
+
+if(state.tab==='features'){
+
+return `
+
+<section class="panel">
+
+<h2>⚡ Feature Manager</h2>
+
+<input id="featureName" placeholder="Nama feature">
+
+<input id="featureCommand" placeholder="Command">
+
+<input id="featureDescription" placeholder="Deskripsi">
+
+<button class="primary save" id="addFeature">
+Tambah Feature
+</button>
+
+<div>
+
+${
+state.features.length
+?
+state.features.map(f=>`
+
+<div class="row">
+
+<div>
+
+<b>${f.name}</b>
+
+<small>
+/${f.command} - ${f.description || 'Tanpa deskripsi'}
+</small>
+
+</div>
+
+<div>
+
+<button
+class="ghost"
+data-toggle="${f.id}"
+data-enabled="${f.enabled}"
+>
+${f.enabled ? 'ON' : 'OFF'}
+</button>
+
+<button
+class="danger"
+data-delete="${f.id}"
+>
+Hapus
+</button>
+
+</div>
+
+</div>
+
+`).join('')
+:
+'<div class="empty">Belum ada feature.</div>'
+}
+
+</div>
+
+</section>
+
+`
+
+}
 
 
 if(state.tab==='dashboard'){
@@ -314,6 +470,34 @@ ${m.description}
 }function bind(){
 
 document
+.querySelector('#addFeature')
+?.addEventListener('click',addFeature)
+
+
+document
+.querySelectorAll('[data-toggle]')
+.forEach(btn=>{
+
+btn.onclick=()=>toggleFeature(
+  btn.dataset.toggle,
+  btn.dataset.enabled !== 'true'
+)
+
+})
+
+
+document
+.querySelectorAll('[data-delete]')
+.forEach(btn=>{
+
+btn.onclick=()=>deleteFeature(
+  btn.dataset.delete
+)
+
+})
+
+
+document
 .querySelectorAll('[data-tab]')
 .forEach(btn=>{
 
@@ -410,6 +594,7 @@ alert('Menu berhasil dibuat')
 
 
 await loadMenus()
+await loadFeatures()
 
 render()
 
