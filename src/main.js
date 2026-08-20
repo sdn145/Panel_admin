@@ -1,6 +1,6 @@
 import './style.css'
 
-const API = 'https://indiana-metal-locator-balanced.trycloudflare.com'
+const API = 'https://arrived-portal-beginning-publicity.trycloudflare.com'
 
 const state = {
   tab: 'dashboard',
