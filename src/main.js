@@ -255,7 +255,7 @@ return `
 
 <input id="featureCommand" placeholder="Command">
 
-<input id="featureDescription" placeholder="Deskripsi">
+<textarea id="featureDescription" placeholder="Deskripsi" rows="6"></textarea>
 
 <button class="primary save" id="addFeature">
 Tambah Feature
